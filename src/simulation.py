@@ -19,6 +19,7 @@ class ReparationCompanySimulation:
         general_reparation_function,
         expert_reparation_function,
         shipping_function,
+        simulation_time=1000,
     ):
 
         # |------------|
@@ -34,6 +35,9 @@ class ReparationCompanySimulation:
         self.shipping_function = (
             shipping_function  # function to generate shipping service time
         )
+        self.simulation_time = simulation_time
+
+        self.rng = np.random.default_rng()
 
         # |------------------|
         # | Simulation state |
@@ -91,6 +95,10 @@ class ReparationCompanySimulation:
         )  # begin_shipping[i] = tuple(time,server) of arrive to shipping server of appliance i
         self.departure = {}  # departure[i] = time of departure of applience i
 
+        # |--------|
+        # | Events |
+        # |--------|
+
     def new_arrival(self):  # event
         appliance_id = self.n_appliances
         self.n_appliances += 1
@@ -99,12 +107,12 @@ class ReparationCompanySimulation:
         # case 1: Classification Specialist is idle
         if self.classification_status < 0:
             # Process the applience inmediately
-            self.process_classification()
+            self.process_classification(appliance_id)
 
         # case 2: Classification Specialist is busy
         else:
             # Add the appliance to classification queue
-            pass
+            self.q_classification.append(appliance_id)
 
     def process_classification(self, appliance_id):
         self.classification_status = appliance_id
@@ -113,6 +121,96 @@ class ReparationCompanySimulation:
         maint_time_end = self.time + duration
         heapq.heappush(self.events_queue, (maint_time_end, "end_classification"))
 
+    def next_arrival(self):
+        if self.time >= self.simulation_time:
+            return
+        time_arrival = self.rng.exponential(1 / self.arrival_rate)
+        next_time_arrival = self.time + time_arrival
+        if next_time_arrival < self.simulation_time:
+            heapq.heappush(self.events_queue, (next_time_arrival, "arrival"))
+
     def classification_ended(self):  # event
         assert self.classification_status >= 0
         appliance_id = self.classification_status
+        next_stage = self.send_2_next_stage()
+
+        if next_stage == 0:
+            self.waiting_shipping[appliance_id] = self.time
+        elif next_stage == 1:
+            # An applience can pass for this stage more than one
+            if appliance_id in self.waiting_general_reparation:
+                self.waiting_general_reparation[appliance_id].append(self.time)
+            else:
+                self.waiting_general_reparation[appliance_id] = [self.time]
+        else:
+            self.waiting_expert_reparation[appliance_id] = self.time
+
+        # Process next applience in classification queue
+        if self.q_classification:
+            next_applience_id = self.q_classification.pop()
+            self.process_classification(next_applience_id)
+        else:
+            self.classification_status = -1
+
+        # Send to next stage
+        if next_stage == 0:
+            if self.q_shipping:
+                self.q_shipping.append(appliance_id)
+            else:
+                if not (-1 in self.shipping_status):
+                    self.q_shipping.append(appliance_id)
+                else:
+                    index = 0 if self.shipping_status[0] == -1 else 1
+                    self.process_shipping(index, appliance_id)
+        elif next_stage == 1:
+            if self.q_general_reparation:
+                self.q_general_reparation.append(appliance_id)
+            else:
+                if not (-1 in self.general_reparation_status):
+                    self.q_general_reparation.append(appliance_id)
+                else:
+                    index = self.general_reparation_status.index(-1)
+                    self.process_general_reparation(index, appliance_id)
+        else:
+            if self.q_expert_reparation:
+                self.q_expert_reparation.append(appliance_id)
+            else:
+                if not (-1 in self.expert_reparation_status):
+                    self.q_expert_reparation.append(appliance_id)
+                else:
+                    index = self.expert_reparation_status.index(-1)
+                    self.process_expert_reparation(index, appliance_id)
+
+    def send_2_next_stage(self):
+        # Generate a random number between 0 and 1
+        rand = self.rng.random()
+
+        # It must decide next stage with:
+
+        # 17% go to shipping
+        if rand < 0.17:
+            return 0
+        # 47,31% go to general reparations
+        elif rand < 0.17 + 0.4731:
+            return 1
+        # 35,69% go to expert reparations
+        else:
+            return 2
+
+    def process_shipping(self, index, applience_id):
+        pass
+
+    def process_general_reparation(self, index, applience_id):
+        pass
+
+    def process_expert_reparation(self, index, applience_id):
+        pass
+
+    def general_reparation_ended(self):  # event
+        pass
+
+    def expert_reparation_ended(self):  # event
+        pass
+
+    def shipping_ended(self):  # event
+        pass
