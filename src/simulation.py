@@ -312,3 +312,43 @@ class ReparationCompanySimulation:
             self.process_shipping(index, next_applience_id)
         else:
             self.shipping_status[index] = -1
+
+    ## |-----------------|
+    ## | Simulation loop |
+    ## |-----------------|
+
+    def run(self):
+        """Run the simulation until all events are processed."""
+        self.next_arrival()
+        while self.events_queue:
+            # Get the next event
+            self.time, event, *args = heapq.heappop(self.events_queue)
+
+            # Call the event function
+            self.events[event](*args)
+
+            # Schedule the next arrival
+            # self.next_arrival()
+
+        # return self.departure
+
+    def get_statistics(self):
+        """
+        Returns the statistics of the simulation.
+        """
+        # Return the statistics
+
+        statistics = {
+            "arrivals": self.arrivals,
+            "waiting_classification": self.waiting_classification,
+            "classificated_at": self.classificated_at,
+            "waiting_general_reparation": self.waiting_general_reparation,
+            "begin_general_reparation": self.begin_general_reparation,
+            "waiting_expert_reparation": self.waiting_expert_reparation,
+            "begin_expert_reparation": self.begin_expert_reparation,
+            "waiting_shipping": self.waiting_shipping,
+            "begin_shipping": self.begin_shipping,
+            "departure": self.departure,
+        }
+
+        return statistics
