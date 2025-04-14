@@ -57,9 +57,9 @@ class ReparationCompanySimulation:
         }
 
         self.q_classification = []  # Queue for classification
-        self.q_general_reparation = [[], [], []]  # Queue for general reparation
-        self.q_expert_reparation = [[], [], [], []]  # Queue for expert reparation
-        self.q_shipping = [[], []]  # Queue for shipping
+        self.q_general_reparation = []  # Queue for general reparation
+        self.q_expert_reparation = []  # Queue for expert reparation
+        self.q_shipping = []  # Queue for shipping
 
         # stores the id of the appliences using the respective servers; if none then -1
         self.classification_status = -1
@@ -118,9 +118,15 @@ class ReparationCompanySimulation:
             # Add the appliance to classification queue
             self.q_classification.append(appliance_id)
 
+        # generate the next arrival
+        self.next_arrival()
+
     def process_classification(self, appliance_id):
         self.classification_status = appliance_id
-        self.classificated_at = self.time
+        if appliance_id in self.classificated_at:
+            self.classificated_at[appliance_id].append(self.time)
+        else:
+            self.classificated_at[appliance_id] = [self.time]
         duration = self.classification_function()
         maint_time_end = self.time + duration
         heapq.heappush(self.events_queue, (maint_time_end, "end_classification"))
@@ -137,7 +143,7 @@ class ReparationCompanySimulation:
         assert self.classification_status >= 0
         appliance_id = self.classification_status
 
-        def send_2_next_stage(self):
+        def send_2_next_stage():
             # Generate a random number between 0 and 1
             rand = self.rng.random()
 
@@ -236,7 +242,7 @@ class ReparationCompanySimulation:
             rand = self.rng.random()
 
             # 5% go back to classification
-            if rand < 0.5:
+            if rand < 0.05:
                 return 0
             # 95% go to shipping
             else:
@@ -284,7 +290,7 @@ class ReparationCompanySimulation:
 
     def send2classification(self, applience_id):
         if self.q_classification:
-            self.q_classification.append[applience_id]
+            self.q_classification.append(applience_id)
         else:
             if self.classification_status == -1:  # there is no applience been processed
                 self.process_classification(applience_id)
