@@ -355,3 +355,10 @@ def best_stats(self):
         "expert_reparation_times": expert_reparation_times,
         "shipping_times": shipping_times,
     }
+
+
+# -----------------------------------------
+
+
+def plot_histogram(self):
+    pass
