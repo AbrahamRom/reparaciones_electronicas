@@ -50,6 +50,8 @@ def run_simulation():
 
     stats.plot_timeline()
 
+    stats.plot_histogram()
+
     # Calculate the statistics
 
 

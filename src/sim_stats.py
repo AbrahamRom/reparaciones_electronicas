@@ -308,57 +308,68 @@ class Statistics:
         plt.tight_layout()
         plt.show()
 
+    # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
+    def plot_histogram(self):
+        """
+        Plot the histogram of the statistics.
+        """
+        # Get the statistics
+        stats = self.best_stats()
 
+        # Plot each statistic
+        for key, values in stats.items():
+            plt.figure()
+            plt.hist(values, bins=30, density=True, alpha=0.6, color="g")
+            plt.title(f"Histogram of {key}")
+            plt.xlabel(key)
+            plt.ylabel("Density")
+            plt.grid(True)
+            plt.show()
 
-def best_stats(self):
-    time_by_applience = []
-    for appliance_id in self.statistics["arrivals"]:
-        time_by_applience.append(
-            self.statistics["departure"][appliance_id]
-            - self.statistics["arrivals"][appliance_id]
-        )
+    def best_stats(self):
+        time_by_applience = []
+        for appliance_id in self.statistics["arrivals"]:
+            time_by_applience.append(
+                self.statistics["departure"][appliance_id]
+                - self.statistics["arrivals"][appliance_id]
+            )
 
-    classification_times = []
-    for appliance_id in self.statistics["classificated_at"]:
-        classification_times.append(
-            self.statistics["classificated_at"][appliance_id]
-            - self.statistics["arrivals"][appliance_id]
-        )
+        classification_times = []
+        for appliance_id in self.statistics["classificated_at"]:
+            classification_times.append(
+                self.statistics["classificated_at"][appliance_id]
+                - self.statistics["arrivals"][appliance_id]
+            )
 
-    general_reparation_times = []
-    for appliance_id in self.statistics["begin_general_reparation"]:
-        general_reparation_times.append(
-            self.statistics["begin_general_reparation"][appliance_id][0]
-            - self.statistics["waiting_general_reparations"][appliance_id]
-        )
+        general_reparation_times = []
+        for appliance_id in self.statistics["begin_general_reparation"]:
+            general_reparation_times.append(
+                self.statistics["begin_general_reparation"][appliance_id][0]
+                - self.statistics["waiting_general_reparations"][appliance_id]
+            )
 
-    expert_reparation_times = []
-    for appliance_id in self.statistics["begin_expert_reparation"]:
-        expert_reparation_times.append(
-            self.statistics["begin_expert_reparation"][appliance_id][0]
-            - self.statistics["waiting_expert_reparations"][appliance_id]
-        )
+        expert_reparation_times = []
+        for appliance_id in self.statistics["begin_expert_reparation"]:
+            expert_reparation_times.append(
+                self.statistics["begin_expert_reparation"][appliance_id][0]
+                - self.statistics["waiting_expert_reparations"][appliance_id]
+            )
 
-    shipping_times = []
-    for appliance_id in self.statistics["begin_shipping"]:
-        shipping_times.append(
-            self.statistics["begin_shipping"][appliance_id][0]
-            - self.statistics["waiting_shippings"][appliance_id]
-        )
+        shipping_times = []
+        for appliance_id in self.statistics["begin_shipping"]:
+            shipping_times.append(
+                self.statistics["begin_shipping"][appliance_id][0]
+                - self.statistics["waiting_shippings"][appliance_id]
+            )
 
-    return {
-        "time_by_applience": time_by_applience,
-        "classification_times": classification_times,
-        "general_reparation_times": general_reparation_times,
-        "expert_reparation_times": expert_reparation_times,
-        "shipping_times": shipping_times,
-    }
+        return {
+            "time_by_applience": time_by_applience,
+            "classification_times": classification_times,
+            "general_reparation_times": general_reparation_times,
+            "expert_reparation_times": expert_reparation_times,
+            "shipping_times": shipping_times,
+        }
 
 
 # -----------------------------------------
-
-
-def plot_histogram(self):
-    pass
