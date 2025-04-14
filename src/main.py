@@ -26,7 +26,7 @@ def run_simulation():
 
     # Set the simulation parameters
     arrival_rate = 9 / 60  # 9 appliances per hour
-    simulation_time = 100  # time in minutes
+    simulation_time = 500  # time in minutes
 
     # Create the simulation
     simulation = Simulation(
@@ -48,12 +48,7 @@ def run_simulation():
 
     stats = Statistics(statistics)
 
-    average_time_in_node_classification = stats.average_time_in_node_classification()
-    print(average_time_in_node_classification)
-    average_wait_time_in_general_reparation = (
-        stats.average_wait_time_in_general_reparation()
-    )
-    print(average_wait_time_in_general_reparation)
+    stats.plot_timeline()
 
     # Calculate the statistics
 
