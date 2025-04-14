@@ -85,3 +85,63 @@ class Statistics:
                 total_time += departures[a] - classificated_at[a]
                 count += 1
         return total_time / count if count > 0 else 0
+
+    def average_time_in_node_classification(self):
+        total_waiting = 0
+        total_occurrences = 0
+
+        waiting_classification = self.statistics.get("waiting_classification", {})
+        # For exit times, merge waiting times from all next-node queues.
+        for appliance_id, entry_times in waiting_classification.items():
+            exit_times = []
+            # waiting_general_reparation might be a list for multiple occurrences
+            if appliance_id in self.statistics.get("waiting_general_reparation", {}):
+                val = self.statistics["waiting_general_reparation"][appliance_id]
+                if isinstance(val, list):
+                    exit_times.extend(val)
+                else:
+                    exit_times.append(val)
+            # waiting_expert_reparation is stored as a scalar or list
+            if appliance_id in self.statistics.get("waiting_expert_reparation", {}):
+                val = self.statistics["waiting_expert_reparation"][appliance_id]
+                if isinstance(val, list):
+                    exit_times.extend(val)
+                else:
+                    exit_times.append(val)
+            # waiting_shipping is stored as a scalar or list
+            if appliance_id in self.statistics.get("waiting_shipping", {}):
+                val = self.statistics["waiting_shipping"][appliance_id]
+                if isinstance(val, list):
+                    exit_times.extend(val)
+                else:
+                    exit_times.append(val)
+
+            # Sort entry and exit times to pair them in order.
+            entry_times_sorted = sorted(entry_times)
+            exit_times_sorted = sorted(exit_times)
+
+            # Pair occurrences in order (only as many pairs as the shortest list).
+            for entry, exit in zip(entry_times_sorted, exit_times_sorted):
+                if exit > entry:
+                    total_waiting += exit - entry
+                    total_occurrences += 1
+
+        return total_waiting / total_occurrences if total_occurrences > 0 else 0
+
+    def average_wait_time_in_general_reparation(self):
+        total_wait = 0
+        total_occurrences = 0
+        waiting_general = self.statistics.get("waiting_general_reparation", {})
+        begin_general = self.statistics.get("begin_general_reparation", {})
+        for appliance_id, entry_times in waiting_general.items():
+            # Ensure entry_times is a list (for appliances with multiple entries)
+            if not isinstance(entry_times, list):
+                entry_times = [entry_times]
+            # Use the general reparation start time as exit time if available.
+            if appliance_id in begin_general:
+                begin_time = begin_general[appliance_id][0]
+                for entry in entry_times:
+                    if begin_time > entry:
+                        total_wait += begin_time - entry
+                        total_occurrences += 1
+        return total_wait / total_occurrences if total_occurrences > 0 else 0

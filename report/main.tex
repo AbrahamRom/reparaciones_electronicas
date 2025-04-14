@@ -1,11 +1,12 @@
 \documentclass[a4paper,12pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[spanish]{babel}
+\usepackage{enumitem}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage{geometry}
-\geometry{margin=1in}
 \usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -35,7 +36,269 @@ cada sección y el tiempo total que un aparato permanece en la empresa. Los resu
 servirán para proponer mejoras en la eficiencia operativa del sistema.
 
 \subsection{Objetivos y metas}
+El objetivo principal de este proyecto es desarrollar una simulación de eventos discretos que permita analizar y comprender el comportamiento del sistema de reparación de aparatos electrónicos. Para ello, se plantea:
 
+\begin{itemize}
+    \item Modelar la llegada de aparatos mediante una distribución de Poisson (9 aparatos por hora) y su clasificación según su tipo de reparación.
+    \item Representar mediante distribuciones exponenciales los tiempos de clasificación, reparación (generales y de expertos) y embalaje en el sistema.
+    \item Investigar las métricas clave del sistema, tales como:
+    \begin{itemize}
+        \item El número promedio de aparatos en cada nodo (clasificación, reparaciones generales, reparaciones de expertos y muelles de embarque).
+        \item El tiempo promedio que un aparato pasa en cada sección.
+        \item El tiempo total que un aparato permanece en la empresa desde su llegada hasta su embalaje.
+    \end{itemize}
+    \item Evaluar el efecto de las rutas de flujo, incluyendo la devolución al inicio del proceso (5\% en reparaciones generales) y la distribución de asignación (17\% a fábrica, 57\% a reparaciones generales, 43\% a expertos).
+    \item Proporcionar una herramienta que facilite la toma de decisiones para optimizar la eficiencia y la organización del sistema de reparación.
+\end{itemize}
+
+\subsection{Variables que describen el problema}
+
+Para modelar el sistema se han identificado las siguientes variables:
+
+\begin{itemize}
+    \item \textbf{Llegada de aparatos:} 
+    \begin{itemize}
+        \item Los aparatos llegan al sistema según una distribución de Poisson con una tasa promedio de 9 aparatos por hora.
+    \end{itemize}
+    \item \textbf{Clasificación:}
+    \begin{itemize}
+        \item Al ingresar, cada aparato es inspeccionado y clasificado por un especialista.
+        \item El tiempo de clasificación se modela mediante una distribución exponencial con una media de 6 minutos por aparato.
+    \end{itemize}
+    \item \textbf{Asignación de rutas:}
+    \begin{itemize}
+        \item Un 17\% de los aparatos es enviado a fábrica.
+        \item Del 83\% restante, el 57\% se dirige a reparaciones generales y el 43\% a reparación por expertos.
+        \item Adicionalmente, en reparaciones generales, el 5\% de los aparatos finalizados vuelve a clasificación.
+    \end{itemize}
+    \item \textbf{Reparaciones:}
+    \begin{itemize}
+        \item \textit{Reparaciones generales:} Se atienden por tres operarios con un tiempo de reparación exponencial promedio de 35 minutos (incluyendo los casos de reenvío a clasificación).
+        \item \textit{Reparaciones por expertos:} Se atienden por cuatro expertos, con un tiempo de reparación exponencial promedio de 65 minutos.
+    \end{itemize}
+    \item \textbf{Embalaje:}
+    \begin{itemize}
+        \item Luego de la reparación, todos los aparatos son enviados al almacén, donde dos muelles de embarque embalan los aparatos.
+        \item El tiempo de embalaje sigue una distribución exponencial con una media de 12.5 minutos por aparato.
+    \end{itemize}
+    \item \textbf{Métricas de interés:}
+    \begin{itemize}
+        \item Número promedio de aparatos en cada nodo (clasificación, reparaciones generales, expertos y muelles de embarque).
+        \item Tiempo promedio que un aparato pasa en cada nodo.
+        \item Tiempo total que un aparato permanece en el sistema, desde su llegada y clasificación hasta su embalaje final.
+    \end{itemize}
+\end{itemize}
+
+\section{Detalles de Implementación}
+
+\subsection{Definición del Objetivo y Requerimientos}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Objetivo:} Simular el funcionamiento de una empresa de reparación de electrodomésticos.
+    \item \textbf{Requerimientos:}
+    \begin{itemize}
+        \item Llegada de aparatos según una distribución de Poisson.
+        \item Tránsito por varias etapas: \emph{clasificación}, \emph{reparaciones} (generales o de expertos) y \emph{embarque}.
+        \item Cada etapa posee su propio tiempo de servicio y asignación de recursos (servidores) junto con sus respectivas colas.
+        \item Recopilación de estadísticas: tiempos de espera en cada nodo, tiempos de servicio y tiempos totales desde la llegada hasta el embarque.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Diseño de la Estructura del Sistema}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Modelo basado en eventos discretos:} 
+    \begin{itemize}
+        \item Se utiliza una lista de eventos ordenada (empleando un \texttt{heap} mediante el módulo \texttt{heapq}) para procesar los eventos en orden cronológico.
+    \end{itemize}
+    \item \textbf{Definición de recursos y colas:}
+    \begin{itemize}
+        \item Se identifican los nodos del sistema:
+        \begin{itemize}
+            \item Clasificación (1 especialista).
+            \item Reparaciones generales (3 técnicos).
+            \item Reparaciones de expertos (4 expertos).
+            \item Embarque (2 muelles).
+        \end{itemize}
+        \item Se crean variables para representar el estado de cada servidor y las colas asociadas.
+    \end{itemize}
+    \item \textbf{Estadísticas de simulación:}
+    \begin{itemize}
+        \item Se diseñan estructuras (por ejemplo, diccionarios) para almacenar tiempos de llegada, espera y salida en cada etapa.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Implementación de la Clase de Simulación}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Constructor (\texttt{\_\_init\_\_}):}
+    \begin{itemize}
+        \item Inicialización de parámetros: tasa de llegada (\texttt{arrival\_rate}), funciones de tiempo de servicio (como \texttt{classification\_function}, etc.) y tiempo total de simulación.
+        \item Inicialización del estado del sistema: contadores de aparatos, listas de eventos, estado de las colas y servidores.
+        \item Configuración de estructuras para seguimiento estadístico, permitiendo obtener promedios y otros indicadores.
+    \end{itemize}
+    \item \textbf{Definición de eventos:}
+    \begin{itemize}
+        \item Se crea un diccionario (por ejemplo, \texttt{self.events}) que relaciona el nombre de cada evento con su función correspondiente.
+        \item Los eventos incluyen: llegada (\texttt{arrival}), finalización de clasificación (\texttt{end\_classification}), finalización de reparación general (\texttt{end\_general\_reparation}), finalización de reparación experta (\texttt{end\_expert\_reparation}) y finalización de embarque (\texttt{end\_shipping}).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Implementación de la Lógica de Cada Etapa}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Llegadas (\texttt{new\_arrival}):}
+    \begin{itemize}
+        \item Cada llegada asigna un identificador único y registra el tiempo de llegada.
+        \item Se comprueba si el especialista de clasificación está libre; en caso contrario, el aparato se añade a la cola de clasificación.
+    \end{itemize}
+    \item \textbf{Procesamiento en Clasificación (\texttt{process\_classification} y \texttt{classification\_ended}):}
+    \begin{itemize}
+        \item Al atender un aparato en clasificación se calcula el tiempo de servicio mediante la función correspondiente.
+        \item Finalizado el servicio de clasificación, se decide aleatoriamente la etapa siguiente: enviar a embarque o derivar a reparaciones, distinguiéndose entre reparaciones generales o de expertos según probabilidades predefinidas.
+    \end{itemize}
+    \item \textbf{Procesamiento en Reparación General y Experta:}
+    \begin{itemize}
+        \item Se gestionan asignaciones de aparatos a servidores disponibles en cada tipo de reparación.
+        \item Se registra el inicio del servicio y se programa el final del mismo utilizando \texttt{heapq}.
+        \item En reparaciones generales, se contempla la posibilidad de que el aparato se redirija a clasificación (según una probabilidad definida).
+    \end{itemize}
+    \item \textbf{Procesamiento de Embarque (\texttt{process\_shipping} y \texttt{shipping\_ended}):}
+    \begin{itemize}
+        \item Se asigna el aparato a un muelle (servidor) para el embarque, se calcula el tiempo de servicio y se programa el evento de finalización.
+        \item Al terminar el embarque se registra la salida del aparato del sistema.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Gestión y Programación de Eventos}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Programación de eventos:}
+    \begin{itemize}
+        \item Se emplea el módulo \texttt{heapq} para mantener la lista de eventos ordenada por tiempo, procesando siempre el evento de menor tiempo primero.
+    \end{itemize}
+    \item \textbf{Generación de nuevos eventos:}
+    \begin{itemize}
+        \item Cada evento programado (por ejemplo, llegada o finalización de servicio) provoca la generación de eventos futuros necesarios, tales como la siguiente llegada o el inicio de una nueva etapa en la cola.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Ejecución del Bucle Principal de Simulación}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Método \texttt{run}:}
+    \begin{itemize}
+        \item Se agenda inicialmente la primera llegada mediante la función correspondiente.
+        \item Se ejecuta un bucle que continúa mientras existan eventos en la lista.
+        \item En cada iteración, se extrae el evento con el menor tiempo y se invoca la función asociada, actualizando el estado del sistema y las estadísticas.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Validación y Verificación}
+
+\begin{itemize}[leftmargin=2cm]
+    \item \textbf{Pruebas Unitarias y Debugging:}
+    \begin{itemize}
+        \item Se insertan breakpoints en las funciones de evento para verificar la correcta actualización de contadores y tiempos.
+        \item Se revisan los registros y estadísticas para confirmar que las transiciones de estado cumplen con los requerimientos.
+    \end{itemize}
+    \item \textbf{Análisis de Resultados:}
+    \begin{itemize}
+        \item Al finalizar la simulación, se recopilan las estadísticas obtenidas (por ejemplo, tiempos promedios, cantidad de aparatos en cada nodo, etc.) para evaluar el desempeño del sistema y responder las preguntas planteadas en el enunciado.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Resumen}
+
+El proceso de implementación se ha desarrollado en los siguientes pasos:
+
+\begin{enumerate}
+    \item \textbf{Definir el objetivo y los requerimientos.}
+    \item \textbf{Diseñar la estructura del sistema, identificando recursos, colas y el modelo basado en eventos discretos.}
+    \item \textbf{Implementar la clase de simulación, inicializando parámetros, estado del sistema y estructuras estadísticas.}
+    \item \textbf{Desarrollar la lógica para cada etapa del proceso (llegadas, clasificación, reparaciones y embarque).}
+    \item \textbf{Gestionar y programar los eventos utilizando una estructura de cola de prioridad (\texttt{heapq}).}
+    \item \textbf{Ejecutar el bucle principal de simulación y registrar la evolución del sistema.}
+    \item \textbf{Validar y verificar el funcionamiento de la simulación mediante pruebas y análisis de resultados.}
+\end{enumerate}
+
+\section{Resultados y experimentos}
+
+\subsection{Hallazgos de la simulación}
+En esta subsección se presentan los principales hallazgos obtenidos a través de la simulación. Se han observado comportamientos tales como:
+\begin{itemize}
+    \item Variaciones en el tiempo de espera en cada uno de los nodos (clasificación, reparaciones generales, reparación por expertos y embarque).
+    \item El número promedio de aparatos presentes en cada etapa del proceso.
+    \item Diferentes tasas de finalización en función de la ruta seleccionada para cada aparato, influidas por las probabilidades definidas en la lógica del sistema (por ejemplo, la proporción de aparatos enviados directamente al embarque versus los que son redirigidos para reparaciones).
+\end{itemize}
+
+\subsection{Interpretación de los resultados}
+Los resultados obtenidos permiten interpretar que:
+\begin{itemize}
+    \item El cuello de botella del sistema se concentra en la etapa de reparaciones, principalmente en el nodo de reparación por expertos, donde el tiempo de servicio es significativamente mayor.
+    \item La variabilidad en la llegada de aparatos y los tiempos de servicio, modelados mediante distribuciones exponenciales, generan fluctuaciones en el número de aparatos en espera en cada nodo.
+    \item La estructura de recursos, con especialistas limitados en cada etapa, influye directamente en el rendimiento general del sistema; en particular, las etapas con menos servidores tienden a generar mayores tiempos de espera.
+\end{itemize}
+
+\subsection{Hipótesis extraídas de los resultados}
+A partir de los hallazgos se pueden extraer las siguientes hipótesis:
+\begin{enumerate}
+    \item La expansión de los recursos en la etapa de reparación por expertos reducirá significativamente el tiempo promedio que un aparato permanece en el sistema.
+    \item Un ajuste en las probabilidades de enrutamiento, favoreciendo directamente el embarque para ciertos tipos de reparación, puede disminuir los tiempos de espera acumulados.
+    \item La implementación de mecanismos de balanceo de carga entre los servidores podría mejorar la eficiencia del sistema en etapas críticas.
+\end{enumerate}
+
+\subsection{Experimentos realizados para validar las hipótesis}
+Para contrastar las hipótesis, se han llevado a cabo diversos experimentos:
+\begin{itemize}
+    \item \textbf{Experimentación con recursos:} Se simularon escenarios con mayor cantidad de servidores en la reparación por expertos, observándose la reducción en los tiempos de espera y el número de aparatos en cola.
+    \item \textbf{Ajuste de probabilidades de enrutamiento:} Se modificaron las probabilidades de derivación en la etapa de clasificación para favorecer rutas de menor retardo, y se compararon los tiempos promedio de permanencia.
+    \item \textbf{Implementación de balanceo de carga:} Se evaluó la incorporación de algoritmos de asignación dinámica de servidores para minimizar la acumulación en etapas críticas, midiendo el impacto en la eficiencia global del sistema.
+\end{itemize}
+
+\subsection{Necesidad de realizar el análisis estadístico de la simulación (Variables de interés)}
+El análisis estadístico se vuelve indispensable para:
+\begin{itemize}
+    \item Determinar la robustez y confiabilidad de los resultados observados, considerando la aleatoriedad inherente de las llegadas y los tiempos de servicio.
+    \item Estimar intervalos de confianza para las variables de interés, tales como:
+    \begin{itemize}
+        \item Tiempo promedio de permanencia de un aparato en el sistema.
+        \item Número promedio de aparatos en cada nodo.
+        \item Distribuciones de tiempos de espera y tiempos de servicio en cada etapa.
+    \end{itemize}
+    \item Realizar comparaciones estadísticas entre distintos escenarios experimentales para validar hipótesis y evaluar mejoras potenciales en el sistema.
+\end{itemize}
+
+\subsection{Análisis de parada de la simulación}
+El análisis de la condición de parada es crucial para asegurar que la simulación capture de forma representativa el comportamiento del sistema:
+\begin{itemize}
+    \item Se determina un tiempo de simulación suficientemente largo para alcanzar un estado estacionario, evitando sesgos en las métricas recolectadas.
+    \item Se evalúa si existen \emph{warm-up periods} durante los cuales el sistema no se comporta de forma representativa, por lo que se descarta esta fase al calcular las estadísticas finales.
+    \item Se realiza un monitoreo continuo del sistema para identificar si las variables de interés se estabilizan, garantizando que la simulación ha finalizado en un estado de equilibrio.
+\end{itemize}
+
+\section{Conclusiones}
+
+La simulación desarrollada permitió obtener una visión detallada del comportamiento del sistema de reparación de electrodomésticos, identificando los principales cuellos de botella y puntos críticos en el flujo de los aparatos. Entre las conclusiones obtenidas se destacan las siguientes:
+
+\begin{itemize}
+    \item \textbf{Identificación de cuellos de botella:}  
+    Se observó que la etapa de reparación por expertos, con tiempos de servicio significativamente mayores, constituye el principal cuello de botella del sistema. Esto repercute directamente en la acumulación de aparatos en cola y en un aumento del tiempo total en el sistema.
+
+    \item \textbf{Impacto de la asignación de recursos:}  
+    La limitación en el número de servidores en cada etapa influye de manera considerable en el rendimiento general. Los experimentos muestran que la expansión de los recursos, especialmente en reparación por expertos, contribuye a la reducción del tiempo de espera y mejora la eficiencia del proceso.
+
+    \item \textbf{Efecto de las probabilidades de enrutamiento:}  
+    El ajuste en las probabilidades de derivación en la etapa de clasificación afecta la distribución de cargas entre las distintas rutas del sistema. Modificar estas probabilidades para favorecer la vía de menor retardo evidenció una disminución en los tiempos de permanencia en el sistema.
+
+    \item \textbf{Importancia del análisis estadístico:}  
+    La naturaleza aleatoria del proceso, modelado mediante distribuciones exponenciales, resalta la necesidad de realizar un análisis estadístico riguroso. La estimación de intervalos de confianza y la comparación de distintos escenarios experimentales validaron las hipótesis planteadas y aportaron robustez a los resultados obtenidos.
+
+    \item \textbf{Validez del estado estacionario:}  
+    La simulación, al ejecutarse por un período suficientemente largo e incorporando fases de \emph{warm-up}, permitió alcanzar un estado estacionario representativo del comportamiento del sistema. Esto garantiza que las métricas y conclusiones extraídas sean consistentes y aplicables a escenarios reales.
+\end{itemize}
+
+En síntesis, la simulación no solo posibilitó evaluar el desempeño actual del sistema, sino también identificar áreas de mejora y sugerir ajustes en la asignación de recursos y estrategias de enrutamiento. Estos hallazgos ofrecen una base sólida para futuras optimizaciones y para la toma de decisiones operativas en la gestión de la empresa de reparación.
 
 
 \end{document}
